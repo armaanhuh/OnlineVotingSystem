@@ -1,17 +1,16 @@
-# Online Voting System
+# Secure Online Voting System
 
-A secure, framework-free online voting system built with **Java Servlets**, **JSP**, and **MySQL**. Designed as a full-stack web application that simulates a real-world digital election with voter authentication, dual-OTP verification, one-vote enforcement, and a live results dashboard.
+A premium, secure, and modern online voting system built using **React 19**, **Vite**, **Tailwind CSS v4**, and **Express.js (Node.js)**. 
+
+To maximize code clarity, ease of maintenance, and minimize codebase size, the project has been consolidated into the absolute minimum number of folders and files. All server endpoints reside in `server.js` at the root, the database is stored in a single root-level `database.json` file, and all frontend components, context states, and routing view guards are consolidated into `src/App.jsx`.
+
+The user interface, styles, variables, and flows are identical to the original JSP layout.
 
 ---
 
-## Features
+## Dashboard Preview
 
-- **Voter ID Verification** — Voters authenticate using a unique EPIC-format registration ID checked against a national registry database
-- **Dual-OTP Authentication** — Simulated two-factor authentication via phone OTP and email OTP
-- **One-Vote Enforcement** — Database-level and session-level checks prevent duplicate voting
-- **Digital Ballot** — Clean candidate selection interface with confirmation modal before submission
-- **Live Results Dashboard** — Real-time vote counts, turnout percentage, and projected leader with auto-refresh
-- **Session Security** — Protected routes ensure only authenticated voters can access the ballot and results
+![Online Voting System Dashboard](voting_system_dashboard.png)
 
 ---
 
@@ -19,170 +18,96 @@ A secure, framework-free online voting system built with **Java Servlets**, **JS
 
 | Layer      | Technology                          |
 |------------|-------------------------------------|
-| Backend    | Java Servlets (Jakarta EE 6.0)      |
-| Frontend   | JSP, HTML5, CSS3, Vanilla JS        |
-| Database   | MySQL 9.x                           |
-| Server     | Apache Tomcat 11.0.2                |
-| Connector  | MySQL Connector/J 9.6.0            |
-
-> **Note:** No external frameworks (Spring, Hibernate, etc.) are used — the entire backend is built with pure Servlets and JDBC.
+| Frontend   | React 19, Tailwind CSS v4           |
+| Build Tool | Vite 8                              |
+| Backend    | Express.js (Node.js)                |
+| Database   | JSON Database (`database.json`)     |
+| Manager    | npm (Node Package Manager)          |
 
 ---
 
-## Project Structure
+## Technical Architecture
 
+### Consolidated File Layout
 ```
-OVS/
+OnlineVotingSystem/
+├── database.json              # Persistent JSON database (root level, auto-generated)
+├── server.js                  # Backend Express API server (root level)
 ├── src/
-│   └── servlets/
-│       ├── DBConnection.java        # MySQL connection utility
-│       ├── VoterVerifyServlet.java   # Voter ID verification
-│       ├── OtpVerifyServlet.java     # Dual-OTP authentication
-│       ├── VoteServlet.java          # Vote casting with transaction safety
-│       └── LogoutServlet.java        # Session cleanup
-├── WebContent/
-│   ├── css/
-│   │   └── style.css                # Complete application styling
-│   ├── WEB-INF/
-│   │   ├── web.xml                  # Servlet mappings
-│   │   └── lib/                     # Jakarta Servlet API & MySQL Connector
-│   ├── verify-voter.jsp             # Landing page — Voter ID input
-│   ├── verify-otp.jsp               # OTP verification page
-│   ├── vote.jsp                     # Digital ballot
-│   ├── confirmed.jsp                # Vote confirmation receipt
-│   └── results.jsp                  # Live results dashboard
-├── lib/                             # Compile-time dependencies
-├── database.sql                     # Database schema & seed data
-├── Demo Sheet.md                    # Demo walkthrough & OTP reference
-└── README.md
+│   ├── App.jsx                # Unified frontend: Context, views, and routing guards
+│   ├── index.css              # Combined style sheet: Tailwind v4 + original styles
+│   └── main.jsx               # React 19 entry point
+├── eslint.config.js           # ESLint configuration
+├── index.html                 # Root index file
+├── package.json               # Dependencies, build tools, & concurrently execution scripts
+└── vite.config.js             # Vite configuration with @tailwindcss/vite plugin
 ```
+
+### Flow and Component Structure
+1. **API Client**: Implements `fetchData` and `saveData` talking to `http://localhost:3001/data` with offline fallback to `localStorage`.
+2. **Context Provider (`SpendingsProvider`)**:
+   - Manages state lists: `candidates`, `voters`, `users`, `votes`.
+   - Manages authentication sessions: `currentUser` (saved to local storage) and `pendingVoter`.
+   - Syncs changes automatically to backend via debounced sync.
+   - Runs a 10-second polling fetch loop to keep live results tallies up-to-date.
+3. **Interactive Subcomponents**:
+   - `Navbar`: Displays commission branding and conditional Logout actions.
+   - `VerifyVoter`: Landing screen validating Voter registration EPIC IDs against database.
+   - `VerifyOtp`: OTP passcode sender and dual 6-digit passcode inputs (advances focus and pastes data automatically).
+   - `Vote`: Candidate selection list, radio check indicators, and review confirmation modal overlay.
+   - `Confirmed`: Cast ticket receipt page displaying a randomized transaction receipt hash.
+   - `Results`: Live tallies including turnout, total votes, projected leader name, and real-time candidate voter turnout progress bars.
+4. **Router Component (`AppContent`)**: Intercepts hash changes and performs client-side session checks, protecting restricted voting/results pages from unauthenticated access.
+
+---
+
+## Express Server Endpoints
+
+The root-level Express backend (`server.js`) operates on port **3001** and manages the following API endpoints:
+
+- **`GET /data`** — Reads `database.json` and returns the complete database structure. If the file is missing, it creates and seeds it.
+- **`POST /data`** — Overwrites `database.json` with the request body (representing the updated state of candidates, voters, users, and votes).
+
+---
+
+## Demo Credentials Card
+
+Use the credentials below to walk through the voting process during a demo. Each Voter ID can only vote **once**.
+
+| # | Voter ID       | Name          | Masked Phone   | Masked Email             | Phone OTP  | Email OTP  |
+|---|----------------|---------------|----------------|--------------------------|------------|------------|
+| 1 | **VUP47392**   | Aarav Sharma  | `987****10`    | `aa***@example.com`      | **482910** | **736251** |
+| 2 | **VDL81620**   | Isha Patel    | `876****09`    | `is***@example.com`      | **193047** | **528374** |
+| 3 | **VKA30517**   | Rohan Gupta   | `765****98`    | `ro***@example.com`      | **847362** | **019283** |
+| 4 | **VTN92746**   | Meera Nair    | `901****78`    | `me***@example.com`      | **571038** | **294716** |
+| 5 | **VRJ54803**   | Vikram Singh  | `890****67`    | `vi***@example.com`      | **638492** | **815037** |
+| 6 | **VWB61938**   | Ananya Das    | `789****56`    | `an***@example.com`      | **420185** | **963574** |
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
+- **Node.js** v18 or higher
+- **npm** v9 or higher
 
-- **Java JDK** 17 or higher
-- **MySQL** 9.x
-- **Apache Tomcat** 11.0.2 — [Download here](https://tomcat.apache.org/download-11.cgi)
-
-### 1. Clone the Repository
-
+### 1. Installation
+Install all project dependencies (React 19, Express, Vite, Tailwind CSS v4):
 ```bash
-git clone https://github.com/armnwho/OVS.git
-cd OVS
+npm install
 ```
 
-### 2. Set Up the Database
-
-Make sure MySQL is running, then execute the schema file:
-
+### 2. Start Servers Concurrently
+Start the Express server on port 3001 and Vite frontend on port 5173 concurrently:
 ```bash
-cat database.sql | mysql -u root -p
+npm run dev
 ```
 
-> This creates the `voting_system` database with tables for voters, candidates, users, and votes, and seeds it with sample data.
+- **Voter Interface**: [http://localhost:5173/](http://localhost:5173/)
+- **Backend API**: [http://localhost:3001/data](http://localhost:3001/data)
 
-### 3. Configure Database Credentials
-
-Edit `src/servlets/DBConnection.java` and update the connection details if your MySQL credentials differ:
-
-```java
-private static final String URL = "jdbc:mysql://localhost:3306/voting_system";
-private static final String USER = "root";
-private static final String PASSWORD = "your_password";
-```
-
-### 4. Place Tomcat
-
-Copy or extract Apache Tomcat 11.0.2 into the project root so the directory structure looks like:
-
-```
-OVS/
-├── apache-tomcat-11.0.2/
-├── src/
-├── WebContent/
-...
-```
-
-### 5. Compile & Deploy
-
-```bash
-javac -cp "lib/jakarta.servlet-api-6.0.0.jar:lib/mysql-connector-j-9.6.0.jar" \
-  -d WebContent/WEB-INF/classes src/servlets/*.java
-
-rm -rf apache-tomcat-11.0.2/webapps/voting
-cp -r WebContent apache-tomcat-11.0.2/webapps/voting
-```
-
-### 6. Start Tomcat
-
-```bash
-./apache-tomcat-11.0.2/bin/startup.sh
-```
-
-### 7. Open the Application
-
-Navigate to: **http://localhost:8080/voting/**
-
----
-
-## Demo Credentials
-
-| Voter ID       | Voter Name     | Phone OTP | Email OTP |
-|----------------|----------------|-----------|-----------|
-| `VUP47392`     | Aarav Sharma   | `482910`  | `736251`  |
-| `VDL81620`     | Isha Patel     | `193047`  | `528374`  |
-| `VKA30517`     | Rohan Gupta    | `847362`  | `019283`  |
-| `VTN92746`     | Meera Nair     | `571038`  | `294716`  |
-| `VRJ54803`     | Vikram Singh   | `638492`  | `815037`  |
-| `VWB61938`     | Ananya Das     | `420185`  | `963574`  |
-
-> Each Voter ID can only vote **once**. To reset, re-run `database.sql`.
-
----
-
-## Application Flow
-
-```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐     ┌──────────────────┐
-│  Voter ID Page  │────▶│  OTP Verification │────▶│  Digital Ballot │────▶│  Vote Confirmed  │
-│  (verify-voter) │     │  (verify-otp)     │     │  (vote)         │     │  (confirmed)     │
-└─────────────────┘     └──────────────────┘     └─────────────────┘     └──────────────────┘
-       │                        │                                               │
-       ▼                        ▼                                               ▼
-  ID not found?           Wrong OTP?                                      Live Results
-  Already voted?          → Error message                                (auto-refresh)
-  → Error message
-```
-
----
-
-## Security Features
-
-| Feature                    | Implementation                                           |
-|----------------------------|----------------------------------------------------------|
-| SQL Injection Prevention   | Prepared Statements for all database queries             |
-| Duplicate Vote Prevention  | Both session-level and database-level checks             |
-| Transaction Safety         | Vote casting uses `setAutoCommit(false)` with rollback   |
-| Session Protection         | All sensitive pages redirect unauthenticated users       |
-| Input Validation           | Server-side validation on all form inputs                |
-
----
-
-## Reset Database
-
-To start fresh (clear all votes and reset voter status):
-
-```bash
-cat database.sql | mysql -u root -p
-```
-
-## Stop Tomcat
-
-```bash
-./apache-tomcat-11.0.2/bin/shutdown.sh
-```
-
----
+### 3. Reset Database State
+To reset the database, clear votes, and restore voter statuses to unused:
+1. Stop the running server.
+2. Delete the root file `database.json`.
+3. Restart the server (`npm run dev`), which will automatically seed a fresh `database.json` file.
